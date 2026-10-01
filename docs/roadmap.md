@@ -16,6 +16,9 @@ Four weeks, one deliverable each. A week is done when its "done when" line is tr
 - Day with no gaps; treatment that fits nowhere.
 - Call cut half-way.
 - Two calls for the same slot.
+- Offers that expire: `book` accepts any `option_id` from `offers` forever, including one
+  whose time has already passed. The exclusion constraint does not catch it, because a slot in
+  the past overlaps nothing. Decide the lifetime and where it is enforced.
 - Pain or urgency.
 - Tool or database failure.
 - **Done when:** ten written cases pass when tried by hand, and each one has an expected outcome
