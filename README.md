@@ -73,5 +73,14 @@ src/app/api/tools/*        one endpoint per tool
 
 Built: data model, synthetic agenda, engine, the four tools in Spanish and English, agent prompt.
 
+Deployed: the backend answers on a public HTTPS URL, with the functions pinned to Vercel's Dublin
+region and a Supabase Postgres database. The three checks at the end of `docs/deploy.md` pass against
+it: unauthorised calls are refused, authorised ones answer, and spoken times come back as plain ASCII.
+
+Tried by voice: one call in Spanish, end to end against the deployed backend. The patient was found,
+a day was asked for, the open gaps were read back, one was chosen and booked, and the appointment is
+stored with `source = 'agent'`. Every tool call is in `tool_events`. The same call in English has not
+been completed yet, so the week 1 goal in `docs/roadmap.md` is not met.
+
 Not built yet: hard cases (cut calls, rescheduling requests, noisy input), the reception console
 (also bilingual), simulated callers and evals.
