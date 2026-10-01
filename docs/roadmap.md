@@ -39,6 +39,12 @@ Four weeks, one deliverable each. A week is done when its "done when" line is tr
 - Pass rate per case type.
 - A log of every failure and the change it led to.
 - Voice and latency tuning.
+- *Optional:* expose the four tools as an MCP server, so their definitions live in this repo and are
+  versioned with the code instead of being retyped into the voice platform's dashboard. Today the name,
+  path, parameters and description of each tool exist twice: in `src/lib/tools.ts` and in
+  `docs/voice-agent-setup.md`, copied by hand into the panel. The two can drift without anything
+  failing loudly. Depends on the platform supporting MCP for agents; check before committing to it.
+  Cut this first if week 4 runs late: the evals are the deliverable, this is plumbing.
 - **Done when:** the pass rate is measured, and every remaining failure is listed with its cause.
 
 ## Wrap-up (29-31 Oct)
