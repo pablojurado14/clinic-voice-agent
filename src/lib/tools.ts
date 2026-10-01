@@ -92,6 +92,17 @@ export async function getOptions(
   conversationId: string | null,
   now: Date = new Date(),
 ): Promise<ToolResult> {
+  // Without a call id the offers below would be stored unattached, and book() could then accept
+  // them from any later call. The voice platform must send conversation_id on every tool
+  // (see docs/voice-agent-setup.md). Refuse rather than offer something unsafe to book.
+  if (!conversationId) {
+    return {
+      ok: false,
+      reason: 'missing_conversation_id',
+      instruction: `This call has no identifier, so no appointment can be offered or booked in it. ${TO_RECEPTION}`,
+    };
+  }
+
   const lang = toLang(input.language);
   const today = madridToday(now);
   const lastDay = addDays(today, HORIZON_DAYS - 1);
@@ -172,6 +183,16 @@ export async function book(
   input: { option_id?: number | string; patient_id?: number | string; language?: string },
   conversationId: string | null,
 ): Promise<ToolResult> {
+  // Without a call id the offer cannot be tied to this call, so "only what was offered in this
+  // call" is unverifiable. Refuse rather than book something that may belong to another call.
+  if (!conversationId) {
+    return {
+      ok: false,
+      reason: 'missing_conversation_id',
+      instruction: `This call has no identifier, so the chosen option cannot be verified. ${TO_RECEPTION}`,
+    };
+  }
+
   const lang = toLang(input.language);
   const optionId = Number(input.option_id);
   const patientId = Number(input.patient_id);
@@ -189,8 +210,10 @@ export async function book(
     FROM offers o JOIN doctors d ON d.id = o.doctor_id JOIN treatments t ON t.code = o.treatment_code
     WHERE o.id = ${optionId}`;
 
-  // The agent can only book something the engine offered in this same call.
-  if (!offer || (offer.conversation_id && conversationId && offer.conversation_id !== conversationId)) {
+  // The agent can only book something the engine offered in this same call. All three parts are
+  // required: an offer that exists, that carries a call id, and whose id is this call's. An offer
+  // with no call id is one stored before get_options started demanding one, and is not bookable.
+  if (!offer || !offer.conversation_id || offer.conversation_id !== conversationId) {
     return { ok: false, reason: 'unknown_option', instruction: retry };
   }
 

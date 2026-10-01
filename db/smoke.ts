@@ -74,7 +74,29 @@ async function main() {
   }
   step('made-up or foreign option ids are refused');
 
-  // 8. Two callers racing for the same slot: exactly one wins.
+  // 8. Without a call id, neither tool does anything: a misconfigured voice platform
+  //    (conversation_id not wired up) must not be able to offer or book.
+  const noId: any = await getOptions(sql, { date, treatment: 'checkup' }, null);
+  assert.equal(noId.ok, false);
+  assert.equal(noId.reason, 'missing_conversation_id');
+  assert.ok(noId.instruction.includes('note_for_reception'));
+  const bookNoId: any = await book(sql, { option_id: chosen.option_id, patient_id: known.patient_id }, null);
+  assert.equal(bookNoId.ok, false);
+  assert.equal(bookNoId.reason, 'missing_conversation_id');
+  assert.ok(bookNoId.instruction.includes('note_for_reception'));
+  step('a call without conversation_id can neither offer nor book');
+
+  // And the mirror case: an offer stored with no call id at all (one written before get_options
+  // started demanding one) is not bookable either, from any call.
+  const [orphan] = await sql<{ id: number }[]>`
+    INSERT INTO offers (conversation_id, doctor_id, treatment_code, starts_at, ends_at, reason)
+    SELECT NULL, doctor_id, treatment_code, starts_at, ends_at, reason FROM offers ORDER BY id DESC LIMIT 1
+    RETURNING id`;
+  const orphanBook: any = await book(sql, { option_id: orphan.id, patient_id: known.patient_id }, 'c1');
+  assert.equal(orphanBook.reason, 'unknown_option');
+  step('an offer with no conversation_id is not bookable');
+
+  // 9. Two callers racing for the same slot: exactly one wins.
   const raceA: any = await getOptions(sql, { date, treatment: 'checkup' }, 'race-a');
   const raceB: any = await getOptions(sql, { date, treatment: 'checkup' }, 'race-b');
   if (raceA.ok && raceB.ok) {
@@ -87,7 +109,7 @@ async function main() {
     step('race for the same slot: one booking, one refusal');
   }
 
-  // 9. Same flow in English: spoken fields come back in English, the agenda is the same.
+  // 10. Same flow in English: spoken fields come back in English, the agenda is the same.
   const english: any = await findPatient(sql, { phone: '600000003', language: 'en' });
   assert.ok(english.calendar[1].label.startsWith('tomorrow, '));
   assert.ok(english.treatments.some((t: any) => t.name === 'check-up'));
@@ -106,7 +128,7 @@ async function main() {
   assert.equal(stored.language, 'en');
   step(`booked in English: ${englishBooked.confirmation}`);
 
-  // 10. Fallback to reception.
+  // 11. Fallback to reception.
   const note: any = await noteForReception(sql, { name: 'Prueba Demo', phone: '611 222 333', reason: 'dolor de muela', preference: 'por la tarde', urgent: 'true' }, 'c3');
   assert.equal(note.ok, true);
   const [queued] = await sql`SELECT urgent, phone, language FROM reception_queue WHERE conversation_id = 'c3'`;
