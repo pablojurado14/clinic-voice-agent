@@ -42,7 +42,23 @@ curl -s -X POST https://YOUR-DEPLOYMENT/api/tools/find-patient \
   -d '{"phone":"600000002","language":"es"}'
 ```
 
-If both answer as expected, continue with `docs/voice-agent-setup.md`.
+A third check, on the host and not on your laptop: spoken times are formatted by the host's ICU,
+whose version decides whether `5:30 pm` carries a normal space or a narrow no-break space (U+202F)
+between the minutes and `pm`. The character is invisible in logs and in `tool_events`, and nothing in
+the agent would notice, but the voice platform would read the string as given. `src/lib/time.ts`
+normalises it; this confirms the deployed host agrees. Use a weekday within the horizon:
+
+```bash
+curl -s -X POST https://YOUR-DEPLOYMENT/api/tools/get-options \
+  -H "content-type: application/json" -H "x-tool-secret: YOUR-SECRET" \
+  -d '{"conversation_id":"deploy-check","date":"YYYY-MM-DD","treatment":"checkup","language":"en"}' \
+  | python3 -c "import json,sys; t=json.load(sys.stdin)['options'][0]['time']; print(repr(t), [hex(ord(c)) for c in t])"
+```
+
+Every code point must be ASCII: the space is `0x20`. Anything else (`0x202f`, `0xa0`) means the host
+formats differently from the development machine, and English times need listening to before a demo.
+
+If all three answer as expected, continue with `docs/voice-agent-setup.md`.
 
 ## Keeping the demo alive
 
