@@ -19,6 +19,10 @@ Four weeks, one deliverable each. A week is done when its "done when" line is tr
 - Offers that expire: `book` accepts any `option_id` from `offers` forever, including one
   whose time has already passed. The exclusion constraint does not catch it, because a slot in
   the past overlaps nothing. Decide the lifetime and where it is enforced.
+- Time-of-day preference in `get_options`: morning, afternoon, last thing. Callers ask for a part of the
+  day, not for a day. Today the engine ranks the whole day and the three options can all land in the
+  morning, so the caller hears nothing that suits them and the day looks full when it is not. Decide
+  whether it is a filter or a tie-breaker, and keep invariant 1: the engine decides, not the prompt.
 - Pain or urgency.
 - Tool or database failure.
 - **Done when:** ten written cases pass when tried by hand, and each one has an expected outcome
